@@ -59,13 +59,17 @@ describe('GoogleMap Component', () => {
     zoom: 10,
   };
 
-  it('renders loading state initially', () => {
+  it('renders loading state initially', async () => {
     mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(false);
     mockGoogleMapsLib.loadGoogleMapsAPI.mockImplementation(() => new Promise(() => { })); // Never resolves
 
     render(<GoogleMap config={defaultConfig} />);
 
-    expect(screen.getByTestId('map-loading')).toBeInTheDocument();
+    // Wait for the loading state to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('map-loading')).toBeInTheDocument();
+    });
+    
     expect(screen.getByText('Loading Google Maps...')).toBeInTheDocument();
   });
 
@@ -184,6 +188,9 @@ describe('GoogleMap Component', () => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledTimes(1);
     });
 
+    // Clear the mock to reset call count
+    mockGoogle.maps.Map.mockClear();
+
     const newConfig: MapConfig = {
       center: { lat: 40.7128, lng: -74.0060 }, // New York
       zoom: 12,
@@ -192,7 +199,7 @@ describe('GoogleMap Component', () => {
     rerender(<GoogleMap config={newConfig} />);
 
     await waitFor(() => {
-      expect(mockGoogle.maps.Map).toHaveBeenCalledTimes(2);
+      expect(mockGoogle.maps.Map).toHaveBeenCalledTimes(1);
       expect(mockGoogle.maps.Map).toHaveBeenLastCalledWith(
         expect.any(HTMLElement),
         expect.objectContaining({

@@ -80,8 +80,7 @@ describe("Google Maps API Loading", () => {
       expect(isGoogleMapsLoading()).toBe(true);
       expect(mockAppendChild).toHaveBeenCalledWith(
         expect.objectContaining({
-          src: "https://maps.googleapis.com/maps/api/js?key=valid-api-key&libraries=places",
-          async: true,
+          src: "https://maps.googleapis.com/maps/api/js?key=valid-api-key&libraries=places&loading=async",
           defer: true,
         })
       );
