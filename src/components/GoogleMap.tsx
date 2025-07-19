@@ -3,6 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleMapProps, MapLoadingState } from '../types/google-maps';
 import { loadGoogleMapsAPI, isGoogleMapsLoaded } from '../lib/google-maps';
+import { MapError, MapError as MapErrorType } from './MapError';
+import { MapLoading } from './MapLoading';
+import { createMapError, isOffline, createOfflineError } from '../lib/error-handling';
 
 /**
  * GoogleMap component that renders an interactive Google Map
@@ -20,6 +23,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
     isLoaded: false,
     error: null,
   });
+  const [mapError, setMapError] = useState<MapErrorType | null>(null);
 
   /**
    * Set up interaction event handlers for pan and zoom events
@@ -58,13 +62,31 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   };
 
   /**
-   * Initialize the Google Map instance
+   * Handle retry functionality for failed map loads
+   */
+  const handleRetry = () => {
+    setMapError(null);
+    setLoadingState({ isLoading: false, isLoaded: false, error: null });
+    initializeMap();
+  };
+
+  /**
+   * Initialize the Google Map instance with comprehensive error handling
    */
   const initializeMap = async () => {
     if (!mapRef.current) return;
 
     try {
       setLoadingState({ isLoading: true, isLoaded: false, error: null });
+      setMapError(null);
+
+      // Check if offline before attempting to load
+      if (isOffline()) {
+        const offlineError = createOfflineError();
+        setMapError(offlineError);
+        setLoadingState({ isLoading: false, isLoaded: false, error: offlineError.message });
+        return;
+      }
 
       // Load Google Maps API if not already loaded
       if (!isGoogleMapsLoaded()) {
@@ -122,22 +144,48 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
       setupMapInteractionHandlers(map);
 
       setLoadingState({ isLoading: false, isLoaded: true, error: null });
+      setMapError(null);
 
       // Call onMapLoad callback if provided
       if (onMapLoad) {
         onMapLoad(map);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load Google Maps';
-      setLoadingState({ isLoading: false, isLoaded: false, error: errorMessage });
+      // Create comprehensive error object based on error type
+      const mapError = createMapError(error, 'map_init');
+      setMapError(mapError);
+      setLoadingState({ isLoading: false, isLoaded: false, error: mapError.message });
     }
   };
 
   /**
-   * Effect to initialize map on component mount
+   * Effect to initialize map on component mount and handle network state changes
    */
   useEffect(() => {
     initializeMap();
+
+    // Network state change handlers for offline scenarios
+    const handleOnline = () => {
+      console.debug('Network connection restored');
+      // If there was a network error, automatically retry
+      if (mapError && mapError.type === 'network_error' && !loadingState.isLoaded) {
+        handleRetry();
+      }
+    };
+
+    const handleOffline = () => {
+      console.debug('Network connection lost');
+      // If map is currently loading, show offline error
+      if (loadingState.isLoading) {
+        const offlineError = createOfflineError();
+        setMapError(offlineError);
+        setLoadingState({ isLoading: false, isLoaded: false, error: offlineError.message });
+      }
+    };
+
+    // Add network event listeners
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     // Cleanup function to handle component unmounting
     return () => {
@@ -145,58 +193,45 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
         // Clear any event listeners or cleanup map instance if needed
         mapInstanceRef.current = null;
       }
+      
+      // Remove network event listeners
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [config.center.lat, config.center.lng, config.zoom, config.mapTypeId]);
 
   /**
-   * Render loading state
+   * Handle retry functionality for failed map loads
+   */
+  const handleRetry = () => {
+    setMapError(null);
+    setLoadingState({ isLoading: false, isLoaded: false, error: null });
+    initializeMap();
+  };
+
+  /**
+   * Render loading state with MapLoading component
    */
   if (loadingState.isLoading) {
     return (
-      <div 
-        className={`google-map-loading ${className}`}
-        data-testid="google-map-loading"
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: '#f5f5f5',
-          color: '#666'
-        }}
-      >
-        Loading map...
-      </div>
+      <MapLoading 
+        message="Loading Google Maps..."
+        showProgress={true}
+        className={className}
+      />
     );
   }
 
   /**
-   * Render error state
+   * Render error state with MapError component
    */
-  if (loadingState.error) {
+  if (mapError) {
     return (
-      <div 
-        className={`google-map-error ${className}`}
-        data-testid="google-map-error"
-        style={{ 
-          width: '100%', 
-          height: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          padding: '20px',
-          textAlign: 'center'
-        }}
-      >
-        <div>
-          <strong>Error loading map:</strong>
-          <br />
-          {loadingState.error}
-        </div>
-      </div>
+      <MapError 
+        error={mapError}
+        onRetry={mapError.retryable ? handleRetry : undefined}
+        className={className}
+      />
     );
   }
 

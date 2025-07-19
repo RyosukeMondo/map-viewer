@@ -4,16 +4,20 @@
  */
 
 import { validateGoogleMapsApiKey } from './env';
+import { createMapError, isOffline, createOfflineError, ErrorHandler } from './error-handling';
 
 // Global variable to track loading state
 let isLoading = false;
 let isLoaded = false;
 let loadPromise: Promise<void> | null = null;
 
+// Error handler instance for retry logic
+const errorHandler = new ErrorHandler(3, 1000);
+
 /**
- * Loads the Google Maps JavaScript API
+ * Loads the Google Maps JavaScript API with comprehensive error handling
  * @returns Promise that resolves when the API is loaded
- * @throws Error if API key validation fails or loading fails
+ * @throws MapError if API key validation fails or loading fails
  */
 export async function loadGoogleMapsAPI(): Promise<void> {
   // Return existing promise if already loading
@@ -25,44 +29,77 @@ export async function loadGoogleMapsAPI(): Promise<void> {
   if (isLoaded) {
     return Promise.resolve();
   }
+
+  // Check if offline before attempting to load
+  if (isOffline()) {
+    throw createOfflineError();
+  }
   
-  // Validate API key before attempting to load
-  const apiKey = validateGoogleMapsApiKey();
-  
-  isLoading = true;
-  
-  loadPromise = new Promise<void>((resolve, reject) => {
-    // Check if Google Maps is already available
-    if (window.google && window.google.maps) {
-      isLoaded = true;
-      isLoading = false;
-      resolve();
-      return;
+  // Use error handler with retry logic
+  loadPromise = errorHandler.executeWithRetry(async () => {
+    // Validate API key before attempting to load
+    let apiKey: string;
+    try {
+      apiKey = validateGoogleMapsApiKey();
+    } catch (error) {
+      throw createMapError(error, 'api_key');
     }
     
-    // Create script element
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
+    isLoading = true;
     
-    // Handle successful load
-    script.onload = () => {
-      isLoaded = true;
-      isLoading = false;
-      resolve();
-    };
-    
-    // Handle load error
-    script.onerror = () => {
-      isLoading = false;
-      loadPromise = null;
-      reject(new Error('Failed to load Google Maps API. Please check your API key and network connection.'));
-    };
-    
-    // Add script to document head
-    document.head.appendChild(script);
-  });
+    return new Promise<void>((resolve, reject) => {
+      // Check if Google Maps is already available
+      if (window.google && window.google.maps) {
+        isLoaded = true;
+        isLoading = false;
+        resolve();
+        return;
+      }
+      
+      // Create script element
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      
+      // Set up timeout for loading
+      const timeoutId = setTimeout(() => {
+        isLoading = false;
+        loadPromise = null;
+        script.remove();
+        reject(createMapError(new Error('Google Maps API loading timed out'), 'network'));
+      }, 15000); // 15 second timeout
+      
+      // Handle successful load
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        isLoaded = true;
+        isLoading = false;
+        resolve();
+      };
+      
+      // Handle load error
+      script.onerror = (event) => {
+        clearTimeout(timeoutId);
+        isLoading = false;
+        loadPromise = null;
+        script.remove();
+        
+        // Check if it's a network error
+        if (isOffline()) {
+          reject(createOfflineError());
+        } else {
+          reject(createMapError(
+            new Error('Failed to load Google Maps API script. This could be due to network issues, invalid API key, or API restrictions.'),
+            'api_load'
+          ));
+        }
+      };
+      
+      // Add script to document head
+      document.head.appendChild(script);
+    });
+  }, 'api_load');
   
   return loadPromise;
 }
