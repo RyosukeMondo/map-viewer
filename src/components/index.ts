@@ -8,4 +8,6 @@ export {
   MapContainerWithLoading 
 } from './MapContainer';
 
-export type { MapContainerProps } from '../types/google-maps';
+export { GoogleMap } from './GoogleMap';
+
+export type { MapContainerProps, GoogleMapProps } from '../types/google-maps';
