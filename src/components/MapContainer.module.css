@@ -1,0 +1,123 @@
+/* MapContainer responsive styles */
+.mapContainer {
+  width: 100%;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
+}
+
+/* Ensure the container maintains aspect ratio and responsiveness */
+.mapContainer > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Loading state styles */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingText {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Desktop styles - full width available */
+@media (min-width: 768px) {
+  .mapContainer {
+    min-height: 400px;
+  }
+}
+
+/* Tablet styles */
+@media (max-width: 767px) and (min-width: 481px) {
+  .mapContainer {
+    min-height: 350px;
+    border-radius: 6px;
+  }
+  
+  .loadingText {
+    font-size: 13px;
+  }
+  
+  .spinner {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Mobile styles - adapt size appropriately */
+@media (max-width: 480px) {
+  .mapContainer {
+    min-height: 300px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .loadingText {
+    font-size: 12px;
+  }
+  
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+    margin-bottom: 12px;
+  }
+}
+
+/* Ensure map functionality and readability on screen size changes */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mapContainer {
+    min-height: 250px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .mapContainer {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Focus and accessibility */
+.mapContainer:focus-within {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .mapContainer {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+  
+  .loadingContainer {
+    display: none;
+  }
+}
