@@ -1,102 +1,110 @@
-import Image from "next/image";
+'use client';
 
+import React from 'react';
+import { GoogleMap, MapContainer } from '../components';
+import { MapConfig } from '../types/google-maps';
+
+/**
+ * Main page component for the Google Maps Viewer application
+ * Integrates GoogleMap component with responsive layout and default settings
+ * 
+ * Requirements implemented:
+ * - 1.1: Display Google Map centered on default location (San Francisco)
+ * - 1.3: Use provided Google Maps API key for authentication
+ * - 4.1: Display map at full available width on desktop
+ * - 4.2: Adapt map size appropriately on mobile devices
+ * - 4.3: Maintain map functionality and readability across screen sizes
+ */
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // Default map configuration as specified in design document
+  // San Francisco center coordinates with zoom level 10
+  const defaultMapConfig: MapConfig = {
+    center: { lat: 37.7749, lng: -122.4194 }, // San Francisco coordinates
+    zoom: 10,
+    // mapTypeId will default to ROADMAP in GoogleMap component if not specified
+  };
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  /**
+   * Handle map load callback for additional initialization if needed
+   */
+  const handleMapLoad = React.useCallback((map: google.maps.Map) => {
+    console.log('Google Map loaded successfully:', map);
+    // Additional map initialization can be added here if needed
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header section */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+            Google Maps Viewer
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 sm:text-base">
+            Interactive map viewer built with Next.js and TypeScript
+          </p>
+        </div>
+      </header>
+
+      {/* Main content area with responsive map */}
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Map container with responsive height */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <MapContainer
+              height="calc(100vh - 200px)" // Responsive height calculation
+              className="w-full"
+            >
+              <GoogleMap
+                config={defaultMapConfig}
+                onMapLoad={handleMapLoad}
+                className="w-full h-full"
+              />
+            </MapContainer>
+          </div>
+
+          {/* Optional info section */}
+          <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Map Features
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                Pan and zoom interactions
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Multiple map types (roadmap, satellite, etc.)
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                Street view integration
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                Responsive design
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                Error handling and offline support
+              </div>
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></span>
+                Fullscreen mode
+              </div>
+            </div>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <p className="text-center text-sm text-gray-500">
+            Built with Next.js, TypeScript, and Google Maps API
+          </p>
+        </div>
       </footer>
     </div>
   );
