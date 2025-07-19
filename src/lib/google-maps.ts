@@ -3,8 +3,13 @@
  * Handles dynamic loading of the Google Maps JavaScript API
  */
 
-import { validateGoogleMapsApiKey } from './env';
-import { createMapError, isOffline, createOfflineError, ErrorHandler } from './error-handling';
+import { validateGoogleMapsApiKey } from "./env";
+import {
+  createMapError,
+  isOffline,
+  createOfflineError,
+  ErrorHandler,
+} from "./error-handling";
 
 // Global variable to track loading state
 let isLoading = false;
@@ -24,7 +29,7 @@ export async function loadGoogleMapsAPI(): Promise<void> {
   if (isLoading && loadPromise) {
     return loadPromise;
   }
-  
+
   // Return immediately if already loaded
   if (isLoaded) {
     return Promise.resolve();
@@ -34,7 +39,7 @@ export async function loadGoogleMapsAPI(): Promise<void> {
   if (isOffline()) {
     throw createOfflineError();
   }
-  
+
   // Use error handler with retry logic
   loadPromise = errorHandler.executeWithRetry(async () => {
     // Validate API key before attempting to load
@@ -42,11 +47,11 @@ export async function loadGoogleMapsAPI(): Promise<void> {
     try {
       apiKey = validateGoogleMapsApiKey();
     } catch (error) {
-      throw createMapError(error, 'api_key');
+      throw createMapError(error, "api_key");
     }
-    
+
     isLoading = true;
-    
+
     return new Promise<void>((resolve, reject) => {
       // Check if Google Maps is already available
       if (window.google && window.google.maps) {
@@ -55,21 +60,26 @@ export async function loadGoogleMapsAPI(): Promise<void> {
         resolve();
         return;
       }
-      
+
       // Create script element
-      const script = document.createElement('script');
+      const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
-      
+
       // Set up timeout for loading
       const timeoutId = setTimeout(() => {
         isLoading = false;
         loadPromise = null;
         script.remove();
-        reject(createMapError(new Error('Google Maps API loading timed out'), 'network'));
+        reject(
+          createMapError(
+            new Error("Google Maps API loading timed out"),
+            "network"
+          )
+        );
       }, 15000); // 15 second timeout
-      
+
       // Handle successful load
       script.onload = () => {
         clearTimeout(timeoutId);
@@ -77,30 +87,34 @@ export async function loadGoogleMapsAPI(): Promise<void> {
         isLoading = false;
         resolve();
       };
-      
+
       // Handle load error
-      script.onerror = (event) => {
+      script.onerror = () => {
         clearTimeout(timeoutId);
         isLoading = false;
         loadPromise = null;
         script.remove();
-        
+
         // Check if it's a network error
         if (isOffline()) {
           reject(createOfflineError());
         } else {
-          reject(createMapError(
-            new Error('Failed to load Google Maps API script. This could be due to network issues, invalid API key, or API restrictions.'),
-            'api_load'
-          ));
+          reject(
+            createMapError(
+              new Error(
+                "Failed to load Google Maps API script. This could be due to network issues, invalid API key, or API restrictions."
+              ),
+              "api_load"
+            )
+          );
         }
       };
-      
+
       // Add script to document head
       document.head.appendChild(script);
     });
-  }, 'api_load');
-  
+  }, "api_load");
+
   return loadPromise;
 }
 
@@ -111,12 +125,12 @@ export async function loadGoogleMapsAPI(): Promise<void> {
 export function isGoogleMapsLoaded(): boolean {
   // Check if Google Maps is available in the window object
   const googleMapsAvailable = !!(window.google && window.google.maps);
-  
+
   // Update internal state if Google Maps is available but not marked as loaded
   if (googleMapsAvailable && !isLoaded) {
     isLoaded = true;
   }
-  
+
   // Return true if either Google Maps is available OR we've marked it as loaded
   // (the latter handles test scenarios where window.google might not be set)
   return googleMapsAvailable || isLoaded;

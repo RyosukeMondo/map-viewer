@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { GoogleMapProps, MapLoadingState } from '../types/google-maps';
 import { loadGoogleMapsAPI, isGoogleMapsLoaded } from '../lib/google-maps';
 import { MapError, MapError as MapErrorType } from './MapError';
@@ -62,18 +62,9 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   };
 
   /**
-   * Handle retry functionality for failed map loads
-   */
-  const handleRetry = () => {
-    setMapError(null);
-    setLoadingState({ isLoading: false, isLoaded: false, error: null });
-    initializeMap();
-  };
-
-  /**
    * Initialize the Google Map instance with comprehensive error handling
    */
-  const initializeMap = async () => {
+  const initializeMap = useCallback(async () => {
     if (!mapRef.current) return;
 
     try {
@@ -98,13 +89,13 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
         center: config.center,
         zoom: config.zoom,
         mapTypeId: config.mapTypeId || google.maps.MapTypeId.ROADMAP,
-        
+
         // Enable zoom controls (Requirement 5.1)
         zoomControl: true,
         zoomControlOptions: {
           position: google.maps.ControlPosition.RIGHT_CENTER,
         },
-        
+
         // Enable map type controls (Requirement 5.2)
         mapTypeControl: true,
         mapTypeControlOptions: {
@@ -117,19 +108,19 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             google.maps.MapTypeId.TERRAIN,
           ],
         },
-        
+
         // Enable street view controls (Requirement 5.3)
         streetViewControl: true,
         streetViewControlOptions: {
           position: google.maps.ControlPosition.RIGHT_TOP,
         },
-        
+
         // Enable fullscreen control
         fullscreenControl: true,
         fullscreenControlOptions: {
           position: google.maps.ControlPosition.RIGHT_TOP,
         },
-        
+
         // Enable pan and zoom interactions (Requirement 1.2)
         gestureHandling: 'auto',
         draggable: true,
@@ -156,7 +147,16 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
       setMapError(mapError);
       setLoadingState({ isLoading: false, isLoaded: false, error: mapError.message });
     }
-  };
+  }, [config.center, config.zoom, config.mapTypeId, onMapLoad]);
+
+  /**
+   * Handle retry functionality for failed map loads
+   */
+  const handleRetry = useCallback(() => {
+    setMapError(null);
+    setLoadingState({ isLoading: false, isLoaded: false, error: null });
+    initializeMap();
+  }, [initializeMap]);
 
   /**
    * Effect to initialize map on component mount and handle network state changes
@@ -193,28 +193,19 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
         // Clear any event listeners or cleanup map instance if needed
         mapInstanceRef.current = null;
       }
-      
+
       // Remove network event listeners
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [config.center.lat, config.center.lng, config.zoom, config.mapTypeId]);
-
-  /**
-   * Handle retry functionality for failed map loads
-   */
-  const handleRetry = () => {
-    setMapError(null);
-    setLoadingState({ isLoading: false, isLoaded: false, error: null });
-    initializeMap();
-  };
+  }, [config.center.lat, config.center.lng, config.zoom, config.mapTypeId, initializeMap, mapError, loadingState.isLoaded, loadingState.isLoading, handleRetry]);
 
   /**
    * Render loading state with MapLoading component
    */
   if (loadingState.isLoading) {
     return (
-      <MapLoading 
+      <MapLoading
         message="Loading Google Maps..."
         showProgress={true}
         className={className}
@@ -226,13 +217,16 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
    * Render error state with MapError component
    */
   if (mapError) {
-    return (
-      <MapError 
-        error={mapError}
-        onRetry={mapError.retryable ? handleRetry : undefined}
-        className={className}
-      />
-    );
+    const errorProps: React.ComponentProps<typeof MapError> = {
+      error: mapError,
+      className,
+    };
+
+    if (mapError.retryable) {
+      errorProps.onRetry = handleRetry;
+    }
+
+    return <MapError {...errorProps} />;
   }
 
   /**

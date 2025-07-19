@@ -41,7 +41,7 @@ const mockGoogle = {
 
 // Setup global mocks
 beforeAll(() => {
-  (global as unknown).google = mockGoogle;
+  (global as unknown as { google: typeof mockGoogle }).google = mockGoogle;
 });
 
 // Reset mocks before each test
@@ -61,21 +61,21 @@ describe('GoogleMap Component', () => {
 
   it('renders loading state initially', () => {
     mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(false);
-    mockGoogleMapsLib.loadGoogleMapsAPI.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockGoogleMapsLib.loadGoogleMapsAPI.mockImplementation(() => new Promise(() => { })); // Never resolves
 
     render(<GoogleMap config={defaultConfig} />);
-    
-    expect(screen.getByTestId('google-map-loading')).toBeInTheDocument();
-    expect(screen.getByText('Loading map...')).toBeInTheDocument();
+
+    expect(screen.getByTestId('map-loading')).toBeInTheDocument();
+    expect(screen.getByText('Loading Google Maps...')).toBeInTheDocument();
   });
 
   it('renders map container after successful load', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('google-map')).toBeInTheDocument();
     });
-    
+
     expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
       expect.any(HTMLElement),
       expect.objectContaining({
@@ -92,9 +92,9 @@ describe('GoogleMap Component', () => {
 
   it('calls onMapLoad callback when map is loaded', async () => {
     const onMapLoad = jest.fn();
-    
+
     render(<GoogleMap config={defaultConfig} onMapLoad={onMapLoad} />);
-    
+
     await waitFor(() => {
       expect(onMapLoad).toHaveBeenCalledWith(mockMap);
     });
@@ -102,9 +102,9 @@ describe('GoogleMap Component', () => {
 
   it('applies custom className', async () => {
     const customClass = 'custom-map-class';
-    
+
     render(<GoogleMap config={defaultConfig} className={customClass} />);
-    
+
     await waitFor(() => {
       const mapElement = screen.getByTestId('google-map');
       expect(mapElement).toHaveClass('google-map', customClass);
@@ -116,9 +116,9 @@ describe('GoogleMap Component', () => {
       ...defaultConfig,
       mapTypeId: mockGoogle.maps.MapTypeId.SATELLITE as google.maps.MapTypeId,
     };
-    
+
     render(<GoogleMap config={configWithMapType} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -133,12 +133,12 @@ describe('GoogleMap Component', () => {
     const errorMessage = 'Failed to load Google Maps API';
     mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(false);
     mockGoogleMapsLib.loadGoogleMapsAPI.mockRejectedValue(new Error(errorMessage));
-    
+
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
-      expect(screen.getByTestId('google-map-error')).toBeInTheDocument();
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(screen.getByTestId('map-error')).toBeInTheDocument();
+      expect(screen.getByText('Maps API Failed to Load')).toBeInTheDocument();
     });
   });
 
@@ -146,20 +146,20 @@ describe('GoogleMap Component', () => {
     mockGoogle.maps.Map.mockImplementation(() => {
       throw new Error('Map initialization failed');
     });
-    
+
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
-      expect(screen.getByTestId('google-map-error')).toBeInTheDocument();
-      expect(screen.getByText('Map initialization failed')).toBeInTheDocument();
+      expect(screen.getByTestId('map-error')).toBeInTheDocument();
+      expect(screen.getByText('Failed to initialize the map')).toBeInTheDocument();
     });
   });
 
   it('loads Google Maps API when not already loaded', async () => {
     mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(false);
-    
+
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogleMapsLib.loadGoogleMapsAPI).toHaveBeenCalled();
     });
@@ -167,30 +167,30 @@ describe('GoogleMap Component', () => {
 
   it('does not load Google Maps API when already loaded', async () => {
     mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(true);
-    
+
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('google-map')).toBeInTheDocument();
     });
-    
+
     expect(mockGoogleMapsLib.loadGoogleMapsAPI).not.toHaveBeenCalled();
   });
 
   it('reinitializes map when config changes', async () => {
     const { rerender } = render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledTimes(1);
     });
-    
+
     const newConfig: MapConfig = {
       center: { lat: 40.7128, lng: -74.0060 }, // New York
       zoom: 12,
     };
-    
+
     rerender(<GoogleMap config={newConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledTimes(2);
       expect(mockGoogle.maps.Map).toHaveBeenLastCalledWith(
@@ -205,7 +205,7 @@ describe('GoogleMap Component', () => {
 
   it('configures enhanced map controls with proper options', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -215,7 +215,7 @@ describe('GoogleMap Component', () => {
           zoomControlOptions: {
             position: 'RIGHT_CENTER',
           },
-          
+
           // Enhanced map type controls (Requirement 5.2)
           mapTypeControl: true,
           mapTypeControlOptions: {
@@ -223,13 +223,13 @@ describe('GoogleMap Component', () => {
             position: 'TOP_CENTER',
             mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain'],
           },
-          
+
           // Enhanced street view controls (Requirement 5.3)
           streetViewControl: true,
           streetViewControlOptions: {
             position: 'RIGHT_TOP',
           },
-          
+
           // Pan and zoom interactions (Requirement 1.2)
           gestureHandling: 'auto',
           draggable: true,
@@ -242,7 +242,7 @@ describe('GoogleMap Component', () => {
 
   it('sets up interaction event listeners for map events', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       // Verify that event listeners are set up for pan and zoom interactions
       expect(mockMap.addListener).toHaveBeenCalledWith('zoom_changed', expect.any(Function));
@@ -250,6 +250,39 @@ describe('GoogleMap Component', () => {
       expect(mockMap.addListener).toHaveBeenCalledWith('dragstart', expect.any(Function));
       expect(mockMap.addListener).toHaveBeenCalledWith('dragend', expect.any(Function));
       expect(mockMap.addListener).toHaveBeenCalledWith('maptypeid_changed', expect.any(Function));
+    });
+  });
+
+  it('shows retry button for retryable errors', async () => {
+    mockGoogleMapsLib.isGoogleMapsLoaded.mockReturnValue(false);
+    mockGoogleMapsLib.loadGoogleMapsAPI.mockRejectedValue(new Error('Network error'));
+
+    render(<GoogleMap config={defaultConfig} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('map-error')).toBeInTheDocument();
+      expect(screen.getByTestId('retry-button')).toBeInTheDocument();
+    });
+  });
+
+  it('handles offline scenarios', async () => {
+    // Mock navigator.onLine to simulate offline state
+    Object.defineProperty(navigator, 'onLine', {
+      writable: true,
+      value: false,
+    });
+
+    render(<GoogleMap config={defaultConfig} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('map-error')).toBeInTheDocument();
+      expect(screen.getByText('You appear to be offline')).toBeInTheDocument();
+    });
+
+    // Restore online state
+    Object.defineProperty(navigator, 'onLine', {
+      writable: true,
+      value: true,
     });
   });
 });

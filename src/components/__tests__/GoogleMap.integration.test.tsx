@@ -40,7 +40,7 @@ const mockGoogle = {
 };
 
 beforeAll(() => {
-  (global as any).google = mockGoogle;
+  (global as unknown as { google: typeof mockGoogle }).google = mockGoogle;
 });
 
 beforeEach(() => {
@@ -62,14 +62,14 @@ describe('GoogleMap Integration', () => {
         <GoogleMap config={defaultConfig} />
       </MapContainer>
     );
-    
+
     // Check that both container and map are rendered
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('google-map')).toBeInTheDocument();
     });
-    
+
     // Verify map was initialized with correct config
     expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
       expect.any(HTMLElement),
@@ -86,9 +86,9 @@ describe('GoogleMap Integration', () => {
       center: { lat: 37.7749, lng: -122.4194 }, // San Francisco
       zoom: 10,
     };
-    
+
     render(<GoogleMap config={sanFranciscoConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -107,7 +107,7 @@ describe('GoogleMap Integration', () => {
 
   it('supports all required map controls', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -123,7 +123,7 @@ describe('GoogleMap Integration', () => {
 
   it('configures enhanced map controls with proper positioning', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockGoogle.maps.Map).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -133,7 +133,7 @@ describe('GoogleMap Integration', () => {
           zoomControlOptions: {
             position: 'RIGHT_CENTER',
           },
-          
+
           // Enhanced map type controls (Requirement 5.2)
           mapTypeControl: true,
           mapTypeControlOptions: {
@@ -141,13 +141,13 @@ describe('GoogleMap Integration', () => {
             position: 'TOP_CENTER',
             mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain'],
           },
-          
+
           // Enhanced street view controls (Requirement 5.3)
           streetViewControl: true,
           streetViewControlOptions: {
             position: 'RIGHT_TOP',
           },
-          
+
           // Pan and zoom interactions (Requirement 1.2)
           gestureHandling: 'auto',
           draggable: true,
@@ -160,7 +160,7 @@ describe('GoogleMap Integration', () => {
 
   it('sets up interaction event handlers for pan and zoom', async () => {
     render(<GoogleMap config={defaultConfig} />);
-    
+
     await waitFor(() => {
       expect(mockMap.addListener).toHaveBeenCalledWith('zoom_changed', expect.any(Function));
       expect(mockMap.addListener).toHaveBeenCalledWith('center_changed', expect.any(Function));
