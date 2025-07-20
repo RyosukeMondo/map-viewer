@@ -16,6 +16,8 @@ const mockMap = {
   getZoom: jest.fn(),
   addListener: jest.fn(),
   getMapTypeId: jest.fn(() => 'roadmap'),
+  panTo: jest.fn(),
+  getDiv: jest.fn(() => document.createElement('div')),
 };
 
 const mockGoogle = {

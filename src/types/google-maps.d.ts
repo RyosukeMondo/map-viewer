@@ -25,6 +25,7 @@ export interface GoogleMapProps {
   config: MapConfig;
   className?: string;
   onMapLoad?: (map: google.maps.Map) => void;
+  onUserInteraction?: () => void;
 }
 
 /**

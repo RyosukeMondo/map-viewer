@@ -6,6 +6,7 @@ import { loadGoogleMapsAPI, isGoogleMapsLoaded } from '../lib/google-maps';
 import { MapError, MapError as MapErrorType } from './MapError';
 import { MapLoading } from './MapLoading';
 import { createMapError, isOffline, createOfflineError } from '../lib/error-handling';
+import { CountryCycler } from './CountryCycler';
 
 /**
  * GoogleMap component that renders an interactive Google Map
@@ -15,6 +16,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   config,
   className = '',
   onMapLoad,
+  onUserInteraction,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -29,38 +31,73 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   /**
    * Set up interaction event handlers for pan and zoom events
    * Implements requirement 1.2 for panning and zooming functionality
+   * Implements requirements 6.4, 6.5, 6.6 for user interaction detection
    */
-  const setupMapInteractionHandlers = (map: google.maps.Map) => {
+  const setupMapInteractionHandlers = useCallback((map: google.maps.Map) => {
     // Handle zoom changes
     map.addListener('zoom_changed', () => {
       const newZoom = map.getZoom();
-      // Optional: Add custom zoom handling logic here
       console.debug('Map zoom changed to:', newZoom);
+      // Trigger user interaction callback (Requirement 6.5)
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
     });
 
     // Handle center changes (panning)
     map.addListener('center_changed', () => {
       const newCenter = map.getCenter();
-      // Optional: Add custom pan handling logic here
       console.debug('Map center changed to:', newCenter?.toJSON());
+      // Trigger user interaction callback (Requirement 6.5)
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
     });
 
     // Handle drag start
     map.addListener('dragstart', () => {
       console.debug('Map drag started');
+      // Trigger user interaction callback (Requirement 6.5)
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
     });
 
     // Handle drag end
     map.addListener('dragend', () => {
       console.debug('Map drag ended');
+      // Trigger user interaction callback (Requirement 6.5)
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
     });
 
     // Handle map type changes
     map.addListener('maptypeid_changed', () => {
       const newMapType = map.getMapTypeId();
       console.debug('Map type changed to:', newMapType);
+      // Trigger user interaction callback (Requirement 6.5)
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
     });
-  };
+
+    // Handle click events (Requirement 6.5)
+    map.addListener('click', () => {
+      console.debug('Map clicked');
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
+    });
+
+    // Handle double click events (Requirement 6.5)
+    map.addListener('dblclick', () => {
+      console.debug('Map double clicked');
+      if (onUserInteraction) {
+        onUserInteraction();
+      }
+    });
+  }, [onUserInteraction]);
 
   /**
    * Handle retry functionality for failed map loads
@@ -75,27 +112,27 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
    * Effect to initialize map on component mount
    */
   useEffect(() => {
-    console.log('🔄 GoogleMap useEffect triggered', { 
-      attempted: initializationAttemptedRef.current, 
-      loaded: loadingState.isLoaded, 
+    console.log('🔄 GoogleMap useEffect triggered', {
+      attempted: initializationAttemptedRef.current,
+      loaded: loadingState.isLoaded,
       loading: loadingState.isLoading,
       mapRef: !!mapRef.current,
       config: config
     });
-    
+
     // Only initialize once and if not already loaded/loading
     if (!initializationAttemptedRef.current && !loadingState.isLoaded && !loadingState.isLoading) {
       console.log('✅ Starting initialization process...');
       initializationAttemptedRef.current = true;
-      
+
       let isMounted = true;
-      
+
       const initializeMap = async () => {
         console.log('🚀 initializeMap function called', {
           mapRefCurrent: !!mapRef.current,
           isMounted: isMounted
         });
-        
+
         // Ensure the map container element is available
         if (!mapRef.current || !isMounted) {
           console.log('❌ Map ref not available or component unmounted', {
@@ -111,7 +148,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             console.log('❌ Component unmounted before setting loading state');
             return;
           }
-          
+
           console.log('📝 Setting loading state to true');
           setLoadingState({ isLoading: true, isLoaded: false, error: null });
           setMapError(null);
@@ -148,7 +185,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             try {
               await loadGoogleMapsAPI();
               console.log('✅ Google Maps API loaded successfully');
-              
+
               // Double-check that the API is actually available
               if (!window.google || !window.google.maps) {
                 console.error('❌ Google Maps API failed to load properly - window.google not available');
@@ -172,11 +209,11 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
               currentContainer: !!currentContainer,
               storedContainerConnected: mapContainer.isConnected
             });
-            
+
             // Reset initialization flag to allow retry
             initializationAttemptedRef.current = false;
             setLoadingState({ isLoading: false, isLoaded: false, error: null });
-            
+
             // Schedule a retry after a short delay
             console.log('🔄 Scheduling retry in 500ms...');
             setTimeout(() => {
@@ -189,7 +226,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             }, 500);
             return;
           }
-          
+
           console.log('✅ Using current container for map creation', {
             currentContainer: currentContainer.tagName,
             isConnected: currentContainer.isConnected
@@ -245,7 +282,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             console.log('❌ Component unmounted before creating map instance');
             return;
           }
-          
+
           console.log('🎨 Creating map with options:', mapOptions);
           console.log('📍 Map container details:', {
             tagName: currentContainer.tagName,
@@ -255,7 +292,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             offsetHeight: currentContainer.offsetHeight,
             isConnected: currentContainer.isConnected
           });
-          
+
           const map = new google.maps.Map(currentContainer, mapOptions);
           mapInstanceRef.current = map;
           console.log('✅ Google Maps instance created successfully', map);
@@ -264,7 +301,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             console.log('❌ Component unmounted before setting up handlers');
             return;
           }
-          
+
           // Add interaction event listeners for pan and zoom (Requirement 1.2)
           console.log('🎧 Setting up map interaction handlers...');
           setupMapInteractionHandlers(map);
@@ -274,7 +311,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
             console.log('❌ Component unmounted before completing initialization');
             return;
           }
-          
+
           console.log('🏁 Setting final loading state...');
           setLoadingState({ isLoading: false, isLoaded: true, error: null });
           setMapError(null);
@@ -287,17 +324,25 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
           }
         } catch (error) {
           console.error('💥 Map initialization failed:', error);
-          console.error('Error details:', {
+
+          // Type guard to safely access error properties
+          const errorDetails = error instanceof Error ? {
             name: error.name,
             message: error.message,
             stack: error.stack
-          });
-          
+          } : {
+            name: 'Unknown Error',
+            message: String(error),
+            stack: undefined
+          };
+
+          console.error('Error details:', errorDetails);
+
           if (!isMounted) {
             console.log('❌ Component unmounted, not setting error state');
             return;
           }
-          
+
           // Create comprehensive error object based on error type
           const mapError = createMapError(error, 'map_init');
           console.log('🚨 Setting error state:', mapError);
@@ -305,7 +350,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
           setLoadingState({ isLoading: false, isLoaded: false, error: mapError.message });
         }
       };
-      
+
       // Use a small delay to ensure the component is fully mounted
       console.log('⏰ Setting up initialization timer...');
       const initTimer = setTimeout(() => {
@@ -325,12 +370,15 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
       };
     } else {
       console.log('⏭️ Skipping initialization', {
-        reason: initializationAttemptedRef.current ? 'already attempted' : 
-                loadingState.isLoaded ? 'already loaded' : 
-                loadingState.isLoading ? 'currently loading' : 'unknown'
+        reason: initializationAttemptedRef.current ? 'already attempted' :
+          loadingState.isLoaded ? 'already loaded' :
+            loadingState.isLoading ? 'currently loading' : 'unknown'
       });
     }
-  }, [config.center.lat, config.center.lng, config.zoom, config.mapTypeId]);
+
+    // Return undefined explicitly for consistency
+    return undefined;
+  }, [config.center.lat, config.center.lng, config.zoom, config.mapTypeId, loadingState.isLoaded, loadingState.isLoading, config, setupMapInteractionHandlers, onMapLoad]);
 
   /**
    * Cleanup effect for component unmounting
@@ -409,15 +457,26 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   }
 
   /**
-   * Render map container
+   * Render map container with integrated country cycling
    */
   return (
-    <div
-      ref={mapRef}
-      className={`google-map ${className}`}
-      data-testid="google-map"
-      style={{ width: '100%', height: '100%' }}
-    />
+    <>
+      <div
+        ref={mapRef}
+        className={`google-map ${className}`}
+        data-testid="google-map"
+        style={{ width: '100%', height: '100%' }}
+      />
+      {/* Integrate CountryCycler component with map instance (Requirements 6.1, 6.4, 6.5, 6.6) */}
+      {loadingState.isLoaded && mapInstanceRef.current && (
+        <CountryCycler
+          map={mapInstanceRef.current}
+          isActive={true}
+          onUserInteraction={onUserInteraction || (() => { })}
+          autoStart={true}
+        />
+      )}
+    </>
   );
 };
 
