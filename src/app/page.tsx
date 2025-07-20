@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { GoogleMap, MapContainer, TimeoutToggle, VideoOverlay } from '../components';
 import { MapConfig } from '../types/google-maps';
 import { useTimeoutPrevention } from '../hooks/useTimeoutPrevention';
@@ -29,14 +29,12 @@ export default function Home() {
   // Use the timeout prevention hook to manage timeout prevention state
   const { isActive: timeoutPrevented, toggle: toggleTimeoutPrevention } = useTimeoutPrevention();
   
-  // Track user interaction for country cycling
-  const [userInteracted, setUserInteracted] = useState(false);
-  
   /**
    * Handle user interaction with the map
    */
   const handleUserInteraction = React.useCallback(() => {
-    setUserInteracted(true);
+    // User interaction handler - can be extended for future features
+    console.log('User interacted with the map');
   }, []);
 
   /**
