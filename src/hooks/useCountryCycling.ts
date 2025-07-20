@@ -322,35 +322,36 @@ export function useCountryCycling(
         setState(prev => ({ ...prev, isPaused: true }));
       }
     } else {
-      // When timeout prevention is deactivated
+      // When timeout prevention is deactivated, resume cycling properly
       if (state.isActive && state.isPaused) {
         console.log('Resuming cycling after timeout prevention deactivated');
         
-        // Update state to ensure it's not paused
+        // Clear any existing timers first
+        clearTimers();
+        
+        // Update state to not paused and start timer after state settles
         setState(prev => ({ ...prev, isPaused: false }));
+        
+        // Start the cycle timer after a brief delay to ensure state has updated
+        const resumeTimeoutId = setTimeout(() => {
+          if (!timeoutPrevented) { // Double-check timeout prevention hasn't been re-enabled
+            console.log('Starting cycle timer after timeout prevention lifted');
+            startCycleTimer();
+          }
+        }, 50);
+        
+        // Store the timeout ID for cleanup
+        return () => clearTimeout(resumeTimeoutId);
       } else if (!state.isActive && autoStart) {
         // If cycling should be active but isn't, start it
         console.log('Auto-starting cycling after timeout prevention deactivated');
         setTimeout(() => start(), 0);
       }
     }
-  }, [timeoutPrevented, state.isActive, state.isPaused, clearTimers, autoStart, start]);
-
-  // Handle resuming cycling after timeout prevention is lifted
-  useEffect(() => {
-    if (!timeoutPrevented && state.isActive && !state.isPaused && !cycleTimerRef.current) {
-      console.log('Starting cycle timer after timeout prevention lifted');
-      // Use a small delay to ensure state has settled
-      const timeoutId = setTimeout(() => {
-        startCycleTimer();
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
     
-    // Return undefined for other code paths
+    // Return undefined for cleanup when no timeout is set
     return undefined;
-  }, [timeoutPrevented, state.isActive, state.isPaused, startCycleTimer]);
+  }, [timeoutPrevented, state.isActive, state.isPaused, clearTimers, autoStart, start, startCycleTimer]);
 
   return {
     state,
