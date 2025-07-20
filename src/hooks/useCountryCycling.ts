@@ -272,6 +272,13 @@ export function useCountryCycling(
 
   // Auto-start cycling when hook is initialized
   useEffect(() => {
+    // Always select an initial country on mount, regardless of timeoutPrevented
+    if (!state.currentCountry) {
+      console.log('Selecting initial country on mount');
+      nextCountry();
+    }
+    
+    // Only start the cycling timer if not prevented
     if (autoStart && !timeoutPrevented) {
       console.log('Auto-starting country cycling');
       start();
@@ -282,7 +289,7 @@ export function useCountryCycling(
       clearTimers();
       clearUserInteractionListeners();
     };
-  }, [autoStart, timeoutPrevented, start, clearTimers, clearUserInteractionListeners]);
+  }, [autoStart, timeoutPrevented, start, clearTimers, clearUserInteractionListeners, state.currentCountry, nextCountry]);
 
   // Update cycling when state changes
   useEffect(() => {
