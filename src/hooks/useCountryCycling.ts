@@ -272,7 +272,8 @@ export function useCountryCycling(
 
   // Auto-start cycling when hook is initialized
   useEffect(() => {
-    if (autoStart) {
+    if (autoStart && !timeoutPrevented) {
+      console.log('Auto-starting country cycling');
       start();
     }
 
@@ -281,7 +282,7 @@ export function useCountryCycling(
       clearTimers();
       clearUserInteractionListeners();
     };
-  }, [autoStart, start, clearTimers, clearUserInteractionListeners]);
+  }, [autoStart, timeoutPrevented, start, clearTimers, clearUserInteractionListeners]);
 
   // Update cycling when state changes
   useEffect(() => {
@@ -299,16 +300,50 @@ export function useCountryCycling(
   
   // Handle timeout prevention changes
   useEffect(() => {
+    console.log('Timeout prevention state changed:', { 
+      timeoutPrevented, 
+      isActive: state.isActive, 
+      isPaused: state.isPaused,
+      hasCycleTimer: !!cycleTimerRef.current
+    });
+    
     if (timeoutPrevented) {
       // When timeout prevention is activated, pause cycling and clear all timers
       if (state.isActive) {
-        pause();
+        console.log('Pausing cycling due to timeout prevention');
+        clearTimers();
+        setState(prev => ({ ...prev, isPaused: true }));
       }
-    } else if (state.isActive) {
-      // When timeout prevention is deactivated, resume cycling if it was active
-      resume();
+    } else {
+      // When timeout prevention is deactivated
+      if (state.isActive && state.isPaused) {
+        console.log('Resuming cycling after timeout prevention deactivated');
+        
+        // Update state to ensure it's not paused
+        setState(prev => ({ ...prev, isPaused: false }));
+      } else if (!state.isActive && autoStart) {
+        // If cycling should be active but isn't, start it
+        console.log('Auto-starting cycling after timeout prevention deactivated');
+        setTimeout(() => start(), 0);
+      }
     }
-  }, [timeoutPrevented, state.isActive, pause, resume]);
+  }, [timeoutPrevented, state.isActive, state.isPaused, clearTimers, autoStart, start]);
+
+  // Handle resuming cycling after timeout prevention is lifted
+  useEffect(() => {
+    if (!timeoutPrevented && state.isActive && !state.isPaused && !cycleTimerRef.current) {
+      console.log('Starting cycle timer after timeout prevention lifted');
+      // Use a small delay to ensure state has settled
+      const timeoutId = setTimeout(() => {
+        startCycleTimer();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+    
+    // Return undefined for other code paths
+    return undefined;
+  }, [timeoutPrevented, state.isActive, state.isPaused, startCycleTimer]);
 
   return {
     state,

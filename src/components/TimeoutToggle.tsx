@@ -28,6 +28,7 @@ export const TimeoutToggle: React.FC<TimeoutToggleProps> = ({
   className = ''
 }) => {
   const handleToggle = () => {
+    console.log('TimeoutToggle: Toggle button clicked, current state:', isActive);
     onToggle(!isActive);
   };
 

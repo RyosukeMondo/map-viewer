@@ -29,6 +29,11 @@ export default function Home() {
   // Use the timeout prevention hook to manage timeout prevention state
   const { isActive: timeoutPrevented, toggle: toggleTimeoutPrevention } = useTimeoutPrevention();
   
+  // Log when timeout prevention state changes
+  React.useEffect(() => {
+    console.log('Page: Timeout prevention state changed:', timeoutPrevented);
+  }, [timeoutPrevented]);
+  
   /**
    * Handle user interaction with the map
    */

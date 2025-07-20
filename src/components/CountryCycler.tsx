@@ -139,17 +139,19 @@ export const CountryCycler: React.FC<CountryCyclerProps> = ({
   }, [state.currentCountry, handleCountryTransition]);
 
   /**
-   * Control cycling based on isActive prop
+   * Control cycling based on isActive prop and timeoutPrevented prop
    */
   useEffect(() => {
-    if (isActive && !state.isActive) {
+    console.debug('CountryCycler: Props changed:', { isActive, timeoutPrevented, stateIsActive: state.isActive });
+    
+    if (isActive && !timeoutPrevented && !state.isActive) {
       console.debug('CountryCycler: Starting cycling (isActive prop changed to true)');
       start();
-    } else if (!isActive && state.isActive) {
-      console.debug('CountryCycler: Stopping cycling (isActive prop changed to false)');
+    } else if ((!isActive || timeoutPrevented) && state.isActive) {
+      console.debug('CountryCycler: Stopping cycling (isActive prop changed to false or timeout prevented)');
       stop();
     }
-  }, [isActive, state.isActive, start, stop]);
+  }, [isActive, timeoutPrevented, state.isActive, start, stop]);
 
 
 

@@ -480,13 +480,16 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
       />
       {/* Integrate CountryCycler component with map instance (Requirements 6.1, 6.4, 6.5, 6.6) */}
       {loadingState.isLoaded && mapInstanceRef.current && (
-        <CountryCycler
-          map={mapInstanceRef.current}
-          isActive={true}
-          onUserInteraction={onUserInteraction || (() => { })}
-          autoStart={true}
-          timeoutPrevented={timeoutPrevented}
-        />
+        <>
+          {console.log('Rendering CountryCycler with timeoutPrevented:', timeoutPrevented)}
+          <CountryCycler
+            map={mapInstanceRef.current}
+            isActive={true}
+            onUserInteraction={onUserInteraction || (() => { })}
+            autoStart={true}
+            timeoutPrevented={timeoutPrevented}
+          />
+        </>
       )}
     </>
   );
