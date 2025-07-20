@@ -22,6 +22,8 @@ export interface CountryCyclerProps {
   idleTimeout?: number;
   /** Whether to start cycling automatically (default: true) */
   autoStart?: boolean;
+  /** Whether timeout prevention is active (default: false) */
+  timeoutPrevented?: boolean;
 }
 
 /**
@@ -40,7 +42,8 @@ export const CountryCycler: React.FC<CountryCyclerProps> = ({
   onCountryChange,
   cycleInterval = 10000, // 10 seconds
   idleTimeout = 30000,   // 30 seconds
-  autoStart = true
+  autoStart = true,
+  timeoutPrevented = false
 }) => {
   const mapElementRef = useRef<HTMLElement | null>(null);
   
@@ -53,7 +56,8 @@ export const CountryCycler: React.FC<CountryCyclerProps> = ({
   } = useCountryCycling(map, {
     cycleInterval,
     idleTimeout,
-    autoStart: autoStart && isActive
+    autoStart: autoStart && isActive,
+    timeoutPrevented
   });
 
   /**

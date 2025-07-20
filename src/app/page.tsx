@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
-import { GoogleMap, MapContainer } from '../components';
+import React, { useState } from 'react';
+import { GoogleMap, MapContainer, TimeoutToggle, VideoOverlay } from '../components';
 import { MapConfig } from '../types/google-maps';
+import { useTimeoutPrevention } from '../hooks/useTimeoutPrevention';
+
 
 /**
  * Main page component for the Google Maps Viewer application
@@ -23,6 +25,19 @@ export default function Home() {
     zoom: 10,
     // mapTypeId will default to ROADMAP in GoogleMap component if not specified
   };
+  
+  // Use the timeout prevention hook to manage timeout prevention state
+  const { isActive: timeoutPrevented, toggle: toggleTimeoutPrevention } = useTimeoutPrevention();
+  
+  // Track user interaction for country cycling
+  const [userInteracted, setUserInteracted] = useState(false);
+  
+  /**
+   * Handle user interaction with the map
+   */
+  const handleUserInteraction = React.useCallback(() => {
+    setUserInteracted(true);
+  }, []);
 
   /**
    * Handle map load callback for additional initialization if needed
@@ -50,7 +65,7 @@ export default function Home() {
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Map container with responsive height */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden relative">
             <MapContainer
               height="calc(100vh - 200px)" // Responsive height calculation
               className="w-full"
@@ -58,9 +73,23 @@ export default function Home() {
               <GoogleMap
                 config={defaultMapConfig}
                 onMapLoad={handleMapLoad}
+                onUserInteraction={handleUserInteraction}
+                timeoutPrevented={timeoutPrevented}
                 className="w-full h-full"
               />
+              
+              {/* Video overlay positioned absolutely over the map */}
+              <VideoOverlay 
+                videoSrc="/black.mp4" 
+                className="absolute inset-0 pointer-events-none" 
+              />
             </MapContainer>
+            
+            {/* The TimeoutToggle component has its own fixed positioning */}
+            <TimeoutToggle 
+              isActive={timeoutPrevented} 
+              onToggle={toggleTimeoutPrevention} 
+            />
           </div>
 
           {/* Optional info section */}

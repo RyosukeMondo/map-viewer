@@ -26,6 +26,7 @@ export interface GoogleMapProps {
   className?: string;
   onMapLoad?: (map: google.maps.Map) => void;
   onUserInteraction?: () => void;
+  timeoutPrevented?: boolean;
 }
 
 /**

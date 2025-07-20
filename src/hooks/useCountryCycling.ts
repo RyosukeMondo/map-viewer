@@ -26,6 +26,8 @@ export interface CountryCyclingOptions {
   idleTimeout?: number;
   /** Whether to start cycling automatically (default: true) */
   autoStart?: boolean;
+  /** Whether timeout prevention is active (default: false) */
+  timeoutPrevented?: boolean;
 }
 
 /**
@@ -62,7 +64,8 @@ export function useCountryCycling(
   const {
     cycleInterval = 10000, // 10 seconds
     idleTimeout = 30000,   // 30 seconds
-    autoStart = true
+    autoStart = true,
+    timeoutPrevented = false
   } = options;
 
   // State management
@@ -141,8 +144,14 @@ export function useCountryCycling(
 
   /**
    * Handle user interaction - pause cycling and start idle timer
+   * If timeout prevention is active, don't resume automatically
    */
   const handleUserInteraction = useCallback(() => {
+    // If timeout prevention is active, don't pause or set timers
+    if (timeoutPrevented) {
+      return;
+    }
+    
     setState(prev => {
       if (!prev.isActive || prev.isPaused) return prev;
       return {
@@ -163,7 +172,7 @@ export function useCountryCycling(
         };
       });
     }, idleTimeout);
-  }, [clearTimers, idleTimeout]);
+  }, [clearTimers, idleTimeout, timeoutPrevented]);
 
   /**
    * Start country cycling
@@ -287,6 +296,19 @@ export function useCountryCycling(
       }
     }
   }, [state.isActive, state.isPaused, startCycleTimer]);
+  
+  // Handle timeout prevention changes
+  useEffect(() => {
+    if (timeoutPrevented) {
+      // When timeout prevention is activated, pause cycling and clear all timers
+      if (state.isActive) {
+        pause();
+      }
+    } else if (state.isActive) {
+      // When timeout prevention is deactivated, resume cycling if it was active
+      resume();
+    }
+  }, [timeoutPrevented, state.isActive, pause, resume]);
 
   return {
     state,

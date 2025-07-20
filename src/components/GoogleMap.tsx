@@ -17,6 +17,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   className = '',
   onMapLoad,
   onUserInteraction,
+  timeoutPrevented = false,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -484,6 +485,7 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
           isActive={true}
           onUserInteraction={onUserInteraction || (() => { })}
           autoStart={true}
+          timeoutPrevented={timeoutPrevented}
         />
       )}
     </>
