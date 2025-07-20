@@ -234,11 +234,21 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
 
           console.log('🗺️ Creating Google Maps instance...');
 
+          // Verify Google Maps API is fully available before accessing MapTypeId
+          if (!window.google || !window.google.maps || !window.google.maps.MapTypeId) {
+            console.error('❌ Google Maps API not fully loaded - MapTypeId not available');
+            throw new Error('Google Maps API not fully initialized');
+          }
+
+          // Safely access MapTypeId now that we've verified it exists
+          const defaultMapTypeId = window.google.maps.MapTypeId.ROADMAP;
+          console.log('✅ Google Maps MapTypeId verified available:', defaultMapTypeId);
+
           // Create map instance with enhanced controls
           const mapOptions: google.maps.MapOptions = {
             center: config.center,
             zoom: config.zoom,
-            mapTypeId: config.mapTypeId || google.maps.MapTypeId.ROADMAP,
+            mapTypeId: config.mapTypeId || defaultMapTypeId,
 
             // Enable zoom controls (Requirement 5.1)
             zoomControl: true,

@@ -83,9 +83,23 @@ export async function loadGoogleMapsAPI(): Promise<void> {
       // Handle successful load
       script.onload = () => {
         clearTimeout(timeoutId);
-        isLoaded = true;
-        isLoading = false;
-        resolve();
+        
+        // Additional check to ensure Google Maps API is fully initialized
+        // This prevents race conditions on slower devices
+        const checkApiReady = () => {
+          if (window.google && window.google.maps && window.google.maps.MapTypeId) {
+            console.log('✅ Google Maps API fully initialized with MapTypeId');
+            isLoaded = true;
+            isLoading = false;
+            resolve();
+          } else {
+            console.log('⏳ Google Maps API loading, waiting for full initialization...');
+            // Retry check after a short delay
+            setTimeout(checkApiReady, 50);
+          }
+        };
+        
+        checkApiReady();
       };
 
       // Handle load error
