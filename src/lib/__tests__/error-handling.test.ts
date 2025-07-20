@@ -4,7 +4,6 @@ import {
   createOfflineError,
   ErrorHandler
 } from '../error-handling';
-import { MapError } from '../../components/MapError';
 
 // Mock navigator.onLine
 Object.defineProperty(navigator, 'onLine', {
@@ -232,7 +231,7 @@ describe('Error Handling Library', () => {
 
     it('handles missing navigator gracefully', () => {
       const originalNavigator = global.navigator;
-      // @ts-ignore
+      // @ts-expect-error - Intentionally deleting navigator to test graceful handling
       delete global.navigator;
 
       expect(isOffline()).toBe(false);
@@ -378,7 +377,7 @@ describe('Error Handling Library', () => {
           const executePromise = errorHandler.executeWithRetry(mockFn, 'network');
           await jest.advanceTimersByTimeAsync(1000);
           await executePromise;
-        } catch (error) {
+        } catch {
           // Expected to fail
         }
 
@@ -400,7 +399,7 @@ describe('Error Handling Library', () => {
           const executePromise = errorHandler.executeWithRetry(mockFn, 'network');
           await jest.advanceTimersByTimeAsync(1000);
           await executePromise;
-        } catch (error) {
+        } catch {
           // Expected to fail
         }
 

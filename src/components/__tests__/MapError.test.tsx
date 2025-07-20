@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { MapError, MapErrorProps } from '../MapError';
+import { MapError } from '../MapError';
 import { MapError as MapErrorType } from '../MapError';
 
 describe('MapError Component', () => {
