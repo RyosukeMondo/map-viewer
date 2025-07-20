@@ -10,4 +10,7 @@ export {
 
 export { GoogleMap } from './GoogleMap';
 
+export { CountryCycler } from './CountryCycler';
+export type { CountryCyclerProps } from './CountryCycler';
+
 export type { MapContainerProps, GoogleMapProps } from '../types/google-maps';
