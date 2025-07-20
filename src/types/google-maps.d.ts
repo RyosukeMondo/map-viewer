@@ -53,3 +53,13 @@ export interface MapLoadingState {
   isLoaded: boolean;
   error: string | null;
 }
+
+/**
+ * Interface representing a country with map viewing data
+ */
+export interface Country {
+  name: string;
+  center: google.maps.LatLngLiteral;
+  zoom: number;
+  code: string;
+}
